@@ -18,6 +18,7 @@ def dueling_layer(input, layer_func, full_size_each, num_actions):
     out_adv = layer_func(full_adv, num_outputs=num_actions, activation_fn=None)
     return out_value + out_adv - tf.expand_dims(tf.reduce_sum(out_adv, axis=-1) / num_actions, axis=-1)
 
+# Distributional version a dueling network.
 def dueling_p_layer(input, layer_func, full_size_each, c):
     full_value = layer_func(input, num_outputs=full_size_each, activation_fn=tf.nn.relu)
     full_adv = layer_func(input, num_outputs=full_size_each, activation_fn=tf.nn.relu)
@@ -68,8 +69,6 @@ class CartPoleConfig(object):
             self.delta_z = (self.v_max - self.v_min) / (self.num_atoms - 1)
             self.z = np.arange(self.v_min, self.v_max + self.delta_z, self.delta_z)
             assert(len(self.z) == self.num_atoms)
-
-
 
     def encode_obs(self, buf, n):
         return buf.get(n)
@@ -152,8 +151,6 @@ class PongConfig(object):
             self.delta_z = (self.v_max - self.v_min) / (self.num_atoms - 1)
             self.z = np.arange(self.v_min, self.v_max + self.delta_z, self.delta_z)
             assert(len(self.z) == self.num_atoms)
-
-
 
     def encode_obs(self, buf, n):
         return np.stack([buf.get(n + ii) for ii in [-3,-2,-1,0]], axis=-1)
@@ -277,7 +274,6 @@ def learn(c):
         else:
             q_target_network = c.build_q_network(obs_t_float)
 
-
     q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="q_network")
     target_q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="q_target_network")
 
@@ -353,7 +349,6 @@ def learn(c):
                 session.run(update_target_op)
             learning_batch_count += 1
 
-
             obs_t, act_t, obs_tpn, rew_segment, done_segment, indices, weights = replay_buffer.sample(c.batch_size)
             per_beta = (c.per_beta_min * (c.max_steps - t_val) + c.per_beta_max * t_val) / float(c.max_steps)
             weights = weights ** per_beta
@@ -394,8 +389,7 @@ def learn(c):
                 for ii in range(c.batch_size):
                     for jj in range(c.num_atoms):
                         m[ii,lower_b[ii,jj]] += p_target_network_tpn[ii,jj,a_prime[ii]] * (upper_b[ii,jj] - b[ii,jj])
-                        m[ii,upper_b[ii,jj]] += p_target_network_tpn[ii,jj,a_prime[ii]] * (b[ii,jj] - lower_b[ii,jj])
-                
+                        m[ii,upper_b[ii,jj]] += p_target_network_tpn[ii,jj,a_prime[ii]] * (b[ii,jj] - lower_b[ii,jj])                
                 feed_dict = {
                     obs_t_ph: obs_t,
                     act_t_ph: act_t,
@@ -421,7 +415,6 @@ def learn(c):
                         est += (c.gamma ** jj) * seg[jj]
                     est += final_q_contribution[ii]
                     q_estimate.append(est)
-
                 feed_dict = {
                     obs_t_ph: obs_t,
                     act_t_ph: act_t,
@@ -456,7 +449,6 @@ def noisy_layer(input, num_outputs, activation_fn):
     # NOTE: I think initialization is same for bias, although the notation in the paper is for weights only.
     bias = tf.Variable(
         tf.random_uniform([num_outputs], minval=-unif_bound, maxval=unif_bound))
-
     # NOTE: Could move this to config if desired.
     sigma_naught = 0.5
     sigma_weight = tf.Variable(tf.constant(sigma_naught / input_size, shape=[num_outputs, input_size]))
@@ -485,7 +477,6 @@ def run(c_class):
     print(args)
 
     c = c_class()
-
     c.use_double_dqn = not(args.no_double)
     c.use_prioritized_replay = not(args.no_per)
     c.use_reward_lookahead = not(args.no_lookahead)
