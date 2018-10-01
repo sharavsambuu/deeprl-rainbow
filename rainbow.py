@@ -117,10 +117,6 @@ class PongConfig(object):
         self.replay_buffer_size = int(1e6)
         self.input_shape = (84,84,4)
         self.env_name = "PongNoFrameskip-v4"
-        # replay_buffer_size = int(2e3)
-        # input_shape = (4,)
-        # num_actions = 2
-        # env_name = "CartPole-v0"
 
         self.max_steps = int(1e7)
         self.learning_frequency = 4
@@ -136,21 +132,17 @@ class PongConfig(object):
             self.learning_starts = 80000
         else:
             self.learning_starts = 200000
-        # learning_starts = 100
         self.gamma = 0.99
-        # gamma = 0.95
         if self.use_noisy_networks:
             self.exploration_max = 0
             self.exploration_min = 0
         else:
             self.exploration_max = 1
             self.exploration_min = 0.01
-        # exploration_anneal_until = 5000
         self.exploration_anneal_until = 250000 # NOTE: This overlaps with learning_starts, is this correct?
         self.per_alpha = 0.5
         self.per_beta_min = 0.4
-        self.per_beta_max = 1.0
-        # adam_learning_rate = 1e-3
+        self.per_beta_max = 1.03
         self.adam_learning_rate = 0.0000625 # From Rainbow paper, \alpha / 4 where \alpha is original DQN LR of 0.00025
         self.adam_epsilon = 1.5e-4
         if self.use_c51:
@@ -177,6 +169,7 @@ class PongConfig(object):
         out = layers.convolution2d(out, num_outputs=64, kernel_size=4, stride=2, activation_fn=tf.nn.relu, data_format="NHWC")
         out = layers.convolution2d(out, num_outputs=64, kernel_size=3, stride=1, activation_fn=tf.nn.relu, data_format="NHWC")
         return layers.flatten(out)
+
     # NOTE: This should not make use of variable reuse, since we'll call multiple times to get distinct networks.
     def build_q_network(self, input):
         if self.use_noisy_networks:
@@ -278,13 +271,11 @@ def learn(c):
             p_network = c.build_p_network(obs_t_float)
         else:
             q_network = c.build_q_network(obs_t_float)
-        # q_network = cartpole_network(obs_t_float)
     with tf.variable_scope("q_target_network"):
         if c.use_c51:
             p_target_network = c.build_p_network(obs_t_float)
         else:
             q_target_network = c.build_q_network(obs_t_float)
-        # q_target_network = cartpole_network(obs_t_float)
 
 
     q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="q_network")
@@ -331,7 +322,6 @@ def learn(c):
 
     while t_val < c.max_steps:
         replay_buffer.add_frame_part1(last_obs)
-        # idx = replay_buffer.store_frame(last_obs)
         if t_val < (c.learning_starts + c.exploration_anneal_until):
             progress = float(t_val - c.learning_starts) / float(c.exploration_anneal_until - c.learning_starts)
             exploration_epsilon = progress * c.exploration_min + (1 - progress) * c.exploration_max
@@ -349,7 +339,6 @@ def learn(c):
 
         last_obs, reward, done, info = env.step(action)
         replay_buffer.add_frame_part2(action, reward, done)
-        # replay_buffer.store_effect(idx, action, reward, done)
         rewards_this_episode.append(reward)
 
         if done:
@@ -448,33 +437,6 @@ def learn(c):
         report_frequency = 10
         if t_val > c.learning_starts and len(episode_rewards) >= report_frequency:
             print("Summary of last %d episodes" % (report_frequency,))
-            se, te, gr, ot = session.run([per_error, total_error, gradients, obs_t_ph], feed_dict = feed_dict)
-            # print(ot)
-            # print(q)
-            # print(action)
-            # print(rew_segment[0])
-            # print(done_segment[0])
-            # print(reward_segment_mask[0])
-            # print(masked_reward_segment[0])
-            print(rew_segment[0])
-            print(done_segment[0])
-            print(reward_segment_mask[0])
-            print(masked_reward_segment[0])
-            print(indices)
-            #print(q_estimate[0])
-            #print(final_q_contribution[0])
-            #print(q_network_tpn)
-            # print(final_q_max)
-            # print(qn)
-            # print(use_final_q_mask[0])
-            # print(final_q_contribution[0])
-            # print(q_estimate)
-            # print(exploration_epsilon)
-            #print(indices)
-            #print(replay_buffer.obs_buf.number_in_buffer)
-            #print(se)
-            #print(q_estimate)
-            print(te)
             print("Max reward: %f" % (max(episode_rewards),))
             print("Min reward: %f" % (min(episode_rewards),))
             print("Avg reward: %f" % (sum(episode_rewards) / len(episode_rewards),))
