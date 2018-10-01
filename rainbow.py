@@ -488,5 +488,5 @@ def run(c_class):
     learn(c)
 
 if __name__ == "__main__":
-    # run(PongConfig)
-    run(CartPoleConfig)
+    run(PongConfig)
+    # run(CartPoleConfig)
