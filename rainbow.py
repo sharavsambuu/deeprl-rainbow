@@ -302,19 +302,21 @@ def learn(c):
 
     t = tf.get_variable("t", dtype=tf.int32, initializer=0)
     t_increment_op = t.assign(t + 1)
-    learning_batch_count = 0
-
     init = tf.global_variables_initializer()
     session.run(init)
-
     t_val = session.run(t)
+
+    logger = tf.summary.FileWriter(c.tb_log_dir, session.graph)
+    tf.summary.histogram("total_error", total_error)
+    tf.summary.histogram("per_error", per_error)
+    summary_op = tf.summary.merge_all()
+
+    last_t = t_val
+    last_benchmark_time = time.time()
+    learning_batch_count = 0
 
     episode_rewards = []
     rewards_this_episode = []
-    last_save = t_val
-
-    last_t = t_val
-    last_time = time.time()
 
     while t_val < c.max_steps:
         replay_buffer.add_frame_part1(last_obs)
@@ -338,6 +340,10 @@ def learn(c):
         rewards_this_episode.append(reward)
 
         if done:
+            ep_sum = tf.Summary()
+            ep_sum.value.add(tag="episode_reward", simple_value=sum(rewards_this_episode))
+            ep_sum.value.add(tag="episode_length", simple_value=len(rewards_this_episode))
+            logger.add_summary(ep_sum, t_val)
             last_obs = env.reset()
             episode_rewards.append(sum(rewards_this_episode))
             rewards_this_episode = []
@@ -422,7 +428,8 @@ def learn(c):
                     weight_ph: weights
                 }
 
-            per_error_update, _ = session.run([per_error, train_op], feed_dict=feed_dict)
+            per_error_update, summary, _ = session.run([per_error, summary_op, train_op], feed_dict=feed_dict)
+            logger.add_summary(summary, t_val)
             replay_buffer.update_priorities(indices, per_error_update)
 
         t_val = session.run(t_increment_op)
@@ -434,8 +441,8 @@ def learn(c):
             print("Min reward: %f" % (min(episode_rewards),))
             print("Avg reward: %f" % (sum(episode_rewards) / len(episode_rewards),))
             print("T: %d" % (t_val,))
-            print("T/sec: %d" % ((t_val - last_t) / (time.time() - last_time),))
-            last_time = time.time()
+            print("T/sec: %d" % ((t_val - last_t) / (time.time() - last_benchmark_time),))
+            last_benchmark_time = time.time()
             last_t = t_val
             episode_rewards = []
 
@@ -483,6 +490,7 @@ def run(c_class):
     c.use_noisy_networks = not(args.no_noise)
     c.use_dueling_networks = not(args.no_duel)
     c.use_c51 = not(args.no_dist)
+    c.tb_log_dir = "./tb_log"
 
     c.setup()
     learn(c)
