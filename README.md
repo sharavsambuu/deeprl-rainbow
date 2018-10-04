@@ -2,6 +2,6 @@ This is an attempt at faithfully recreating the set of DQN variants discussed in
 
 If all prerequisites are installed, can be run in the default configuration on Pong by typing "python rainbow.py".
 
-Here's a graph of performance on Pong with all variants enabled (smoothed with rolling average, window size 10):
+Here's a graph of performance on Pong with all variants enabled:
 
 ![Rainbow performance graph for Pong](http://coreystaten.github.io/assets/rainbow.png)
