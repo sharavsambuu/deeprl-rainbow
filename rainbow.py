@@ -141,7 +141,7 @@ class PongConfig(object):
         self.exploration_anneal_until = 250000 # NOTE: This overlaps with learning_starts, is this correct?
         self.per_alpha = 0.5
         self.per_beta_min = 0.4
-        self.per_beta_max = 1.03
+        self.per_beta_max = 1.0
         self.adam_learning_rate = 0.0000625 # From Rainbow paper, \alpha / 4 where \alpha is original DQN LR of 0.00025
         self.adam_epsilon = 1.5e-4
         if self.use_c51:
