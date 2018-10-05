@@ -18,7 +18,7 @@ def dueling_layer(input, layer_func, full_size_each, num_actions):
     out_adv = layer_func(full_adv, num_outputs=num_actions, activation_fn=None)
     return out_value + out_adv - tf.expand_dims(tf.reduce_sum(out_adv, axis=-1) / num_actions, axis=-1)
 
-# Distributional version a dueling network.
+# Distributional version of a dueling network.
 def dueling_p_layer(input, layer_func, full_size_each, c):
     full_value = layer_func(input, num_outputs=full_size_each, activation_fn=tf.nn.relu)
     full_adv = layer_func(input, num_outputs=full_size_each, activation_fn=tf.nn.relu)
